@@ -41,16 +41,24 @@ tasks:
   build:
     desc: Build the SpurtCMS binary
     dir: "{{.SRC_DIR}}/spurtcms"
+    env:
+      GOWORK: off
     cmds:
       - go build -o ../../{{.BINARY}} .
 
   test:
     desc: Run tests
+    dir: "{{.SRC_DIR}}/spurtcms"
+    env:
+      GOWORK: off
     cmds:
       - go test ./...
 
   lint:
     desc: Run linter
+    dir: "{{.SRC_DIR}}/spurtcms"
+    env:
+      GOWORK: off
     cmds:
       - golangci-lint run || echo "golangci-lint not installed, skipping"
 
@@ -67,6 +75,8 @@ tasks:
   run:
     desc: Run SpurtCMS from .src folder
     dir: "{{.SRC_DIR}}/spurtcms"
+    env:
+      GOWORK: off
     cmds:
       - go run main.go
 
@@ -83,6 +93,9 @@ tasks:
 
   mod:
     desc: Tidy go modules
+    dir: "{{.SRC_DIR}}/spurtcms"
+    env:
+      GOWORK: off
     cmds:
       - go mod tidy
 
