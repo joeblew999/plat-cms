@@ -1,7 +1,9 @@
 # ADR-0003: xplat Issues and Fixes
 
 ## Status
-Proposed
+Partially Implemented
+
+**Issue #1 (ui command):** ✅ Fixed - committed to xplat main branch (72f9f77, a765f57)
 
 ## Context
 
@@ -123,7 +125,7 @@ processes:
 ## Recommendations
 
 ### Priority 1 (Blocking)
-- [ ] Register `xplat ui` command that calls `web.StartVia()`
+- [x] Register `xplat ui` command that calls `web.StartVia()` ✅ DONE
 
 ### Priority 2 (Improves DX)
 - [ ] Make `xplat gen process` read local xplat.yaml
