@@ -11,11 +11,11 @@ xplat driven: https://github.com/joeblew999/xplat
 xplat task setup
 
 # Start everything (PostgreSQL + CMS)
-xplat task db:up
-xplat task run
+xplat task up
 
-# Or use process-compose
-xplat process
+# Or start individually
+xplat task db:up
+xplat task go:run
 ```
 
 ## Admin Access
@@ -159,6 +159,8 @@ plat-cms/
 │   ├── migration/      # DB migrations
 │   └── .env            # Runtime config
 ├── docs/adr/           # Architecture Decision Records
+├── scripts/            # Utility scripts (block fetching)
+├── seeds/              # SQL seed files for blocks
 ├── docker-compose.yml  # PostgreSQL container
 ├── Taskfile.yml        # xplat task definitions
 └── xplat.yaml          # Package manifest
