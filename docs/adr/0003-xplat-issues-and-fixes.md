@@ -1,188 +1,98 @@
 # ADR-0003: xplat Issues and Fixes
 
 ## Status
-Partially Implemented
+Mostly Resolved
 
-**Issue #1 (ui command):** ✅ Fixed - committed to xplat main branch (72f9f77, a765f57)
+**Issue #1 (ui command):** ✅ Fixed - committed to xplat main (72f9f77, a765f57, 680045e)
+**Issue #3 (ports):** ✅ Already solved - xplat uses 876x port range
+**Issue #4 (auto-start UI):** ✅ Already works - UI enabled by default in service config
 
 ## Context
 
-While setting up plat-cms with xplat, several issues were discovered that should be fixed in xplat itself.
+While setting up plat-cms with xplat, several issues were discovered. Most turned out to be already solved or just needed the missing ui command.
 
 ## Issues Found
 
-### 1. `xplat service start --with-ui` - UI command not registered
+### 1. `xplat service start --with-ui` - UI command not registered ✅ FIXED
 
-**Problem:** The service tries to run `xplat ui` when `--with-ui` is passed, but that command doesn't exist:
+**Problem:** The service tried to run `xplat ui` but that command didn't exist.
 
-```
-Error: unknown command "ui" for "xplat"
-```
+**Fix:** Created `/cmd/xplat/cmd/ui.go` that:
+- Registers the `ui` command
+- Uses config.DefaultUIPort (8760) and config.DefaultProcessComposePort (8761)
+- Supports flags: `--port`, `--no-browser`, `--taskfile`, `--dir`, `--pc-port`
 
-**Evidence from source:**
-- `/internal/webui/` package exists with full Via-based UI implementation
-- `/internal/service/service.go:109` calls `exec.Command(p.xplatBin, "ui", "--no-browser", "-p", p.uiPort)`
-- But no `ui` command is registered in `/cmd/xplat/cmd/`
+**Commits:**
+- 72f9f77: Initial ui command
+- 680045e: Use config constants for default ports
 
-**Proposed Fix:**
-1. Create `/cmd/xplat/cmd/ui.go` that registers the `ui` command
-2. Wire it to call `web.StartVia()` from the webui package
-3. Accept flags: `--port`/`-p`, `--no-browser`, `--taskfile`, `--dir`
-
-**Suggested command structure:**
-```bash
-xplat ui                    # Start UI on default port 3000, open browser
-xplat ui -p 8000            # Start on port 8000
-xplat ui --no-browser       # Don't open browser (for service mode)
-```
-
-### 2. `xplat gen process` requires packages
+### 2. `xplat gen process` requires packages (Still Open)
 
 **Problem:** Running `xplat gen process` says "No installed packages with process configuration found" even though `xplat.yaml` has a `processes:` section.
 
-**Current behavior:**
-```bash
-$ xplat gen process
-No installed packages with process configuration found.
-Install packages first with: xplat pkg install <package>
-```
+**Workaround:** Manually create `process-compose.yaml`.
 
-**Expected behavior:** Should generate `process-compose.yaml` from the local `xplat.yaml` processes section.
-
-**Workaround:** Manually created `process-compose.yaml`:
-```yaml
-version: "0.5"
-processes:
-  postgres:
-    command: docker compose up postgres
-    readiness_probe:
-      exec:
-        command: pg_isready -h localhost -p 5432
-  cms:
-    command: task go:run
-    depends_on:
-      postgres:
-        condition: process_healthy
-```
-
-**Proposed Fix:**
+**Future Fix:**
 1. `xplat gen process` should read local `xplat.yaml` processes section
 2. Convert to process-compose.yaml format
 3. Merge with any installed package processes
 
-### 3. Port standardization unclear
+### 3. Port standardization ✅ ALREADY SOLVED
 
-**Problem:** Various xplat services use different default ports but there's no clear documentation or conflict detection:
+**Discovery:** xplat already uses a well-defined 876x port range!
 
-| Service | Default Port | Notes |
-|---------|-------------|-------|
-| Task UI | 3000 | Via web framework |
-| MCP HTTP | 8080? | Conflicts with many apps |
-| process-compose API | 8080 | Default PC port |
+| Service | Default Port | Constant |
+|---------|-------------|----------|
+| Task UI | 8760 | `config.DefaultUIPort` |
+| Process Compose API | 8761 | `config.DefaultProcessComposePort` |
+| MCP HTTP | 8762 | `config.DefaultMCPPort` |
+| Webhook server | 8763 | `config.DefaultWebhookPort` |
 
-**Proposed Fix:**
-1. Document standard port allocations
-2. Add port conflict detection on startup
-3. Consider higher port ranges to avoid conflicts (e.g., 13000, 13001, etc.)
+**External tools keep their defaults:**
+- Hugo: 1313
+- Caddy admin: 2019
 
-### 4. Service logs not visible during startup
+The ui.go I initially created used hardcoded "3000" - this was fixed in commit 680045e.
 
-**Problem:** When `xplat service start` fails, there's no immediate feedback. Had to manually check `/Users/apple/xplat.err.log`.
+### 4. UI auto-start ✅ ALREADY WORKS
 
-**Proposed Fix:**
-1. Show last N lines of error log on startup failure
-2. Or stream logs briefly during startup to show progress
+**Discovery:** The service config at `~/.xplat/service.yaml` defaults to:
+- `ui: true` (UI enabled by default)
+- `mcp: true` (MCP enabled by default)
+- `sync: true` (GitHub sync enabled by default)
 
-### 5. xplat.yaml processes format differs from process-compose
+So `xplat service start` already starts the UI automatically. No `--with-ui` flag needed.
 
-**Problem:** The `xplat.yaml` processes section uses a simplified format that differs from `process-compose.yaml`:
+### 5. Port conflict detection (Future ADR)
 
-```yaml
-# xplat.yaml format (current)
-processes:
-  postgres:
-    command: docker compose up postgres
-    port: 5432
-    readiness_probe:
-      exec:
-        command: pg_isready -h localhost -p 5432
+**Problem:** Port conflicts are detected at runtime but not prevented proactively.
 
-# process-compose.yaml format (required)
-processes:
-  postgres:
-    command: docker compose up postgres
-    readiness_probe:
-      exec:
-        command: pg_isready -h localhost -p 5432
-      initial_delay_seconds: 2
-      period_seconds: 5
-```
+**Recommendation:** Create separate ADR for port conflict detection system:
+- Pre-check port availability before starting services
+- Suggest alternative ports if conflicts found
+- Show which process is using the conflicting port
 
-**Proposed Fix:**
-1. Either make xplat.yaml match process-compose format exactly
-2. Or have `xplat gen process` translate between formats (adding defaults for missing fields)
+### 6. xplat.yaml processes format (Minor)
+
+The xplat.yaml processes section uses a slightly simplified format. This is by design - `xplat gen process` should translate and add defaults like `initial_delay_seconds`.
 
 ## Recommendations
 
-### Priority 1 (Blocking)
-- [x] Register `xplat ui` command that calls `web.StartVia()` ✅ DONE
+### Completed ✅
+- [x] Register `xplat ui` command
+- [x] Use config constants for ports (8760, 8761)
+- [x] Fix outdated port comments in service_config.go
 
 ### Priority 2 (Improves DX)
 - [ ] Make `xplat gen process` read local xplat.yaml
 - [ ] Show error log snippet on service start failure
 
-### Priority 3 (Nice to have)
-- [ ] Document standard port allocations
-- [ ] Add port conflict detection
-
-## Implementation Notes
-
-The webui package at `/internal/webui/via_server.go` is complete and functional. It just needs:
-
-```go
-// cmd/xplat/cmd/ui.go
-package cmd
-
-import (
-    "context"
-    "github.com/spf13/cobra"
-    web "github.com/joeblew999/xplat/internal/webui"
-)
-
-var uiPort string
-var uiNoBrowser bool
-var uiTaskfile string
-var uiDir string
-
-var UICmd = &cobra.Command{
-    Use:   "ui",
-    Short: "Start Task UI web interface",
-    Long:  `Start a web-based UI for running Taskfile tasks.`,
-    RunE: func(cmd *cobra.Command, args []string) error {
-        cfg := web.DefaultViaConfig()
-        cfg.Port = uiPort
-        cfg.OpenBrowser = !uiNoBrowser
-        if uiTaskfile != "" {
-            cfg.Taskfile = uiTaskfile
-        }
-        if uiDir != "" {
-            cfg.WorkDir = uiDir
-        }
-        return web.StartVia(context.Background(), cfg)
-    },
-}
-
-func init() {
-    RootCmd.AddCommand(UICmd)
-    UICmd.Flags().StringVarP(&uiPort, "port", "p", "3000", "Port to listen on")
-    UICmd.Flags().BoolVar(&uiNoBrowser, "no-browser", false, "Don't open browser on start")
-    UICmd.Flags().StringVarP(&uiTaskfile, "taskfile", "t", "", "Path to Taskfile.yml")
-    UICmd.Flags().StringVarP(&uiDir, "dir", "d", "", "Working directory")
-}
-```
+### Priority 3 (Separate ADR)
+- [ ] Port conflict detection and resolution
 
 ## References
 
 - xplat source: `/Users/apple/workspace/go/src/github.com/joeblew999/xplat`
-- webui package: `/internal/webui/via_server.go`
-- service package: `/internal/service/service.go`
+- Port config: `/internal/config/config.go` (lines 40-52)
+- Service config: `/internal/config/service_config.go`
+- UI command: `/cmd/xplat/cmd/ui.go`
