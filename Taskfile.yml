@@ -23,7 +23,7 @@ tasks:
     desc: Initial setup - fetch SpurtCMS and initialize
     cmds:
       - task: fetch
-      - task: mod
+      - task: go:mod
       - task: db:up
       - echo "Setup complete! Run 'xplat process' or 'task run' to start"
 
@@ -37,40 +37,6 @@ tasks:
         else
           echo "SpurtCMS already fetched in {{.SRC_DIR}}/spurtcms"
         fi
-
-  build:
-    desc: Build the SpurtCMS binary
-    dir: "{{.SRC_DIR}}/spurtcms"
-    env:
-      GOWORK: off
-    cmds:
-      - go build -o ../../{{.BINARY}} .
-
-  test:
-    desc: Run tests
-    dir: "{{.SRC_DIR}}/spurtcms"
-    env:
-      GOWORK: off
-    cmds:
-      - go test ./...
-
-  lint:
-    desc: Run linter
-    dir: "{{.SRC_DIR}}/spurtcms"
-    env:
-      GOWORK: off
-    cmds:
-      - golangci-lint run || echo "golangci-lint not installed, skipping"
-
-  clean:
-    desc: Clean build artifacts
-    cmds:
-      - rm -f {{.BINARY}}
-
-  install:
-    desc: Install to GOBIN
-    cmds:
-      - go install {{.MAIN}}
 
   run:
     desc: Run SpurtCMS from .src folder
@@ -91,13 +57,51 @@ tasks:
           task run
         fi
 
-  mod:
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -f {{.BINARY}}
+
+  # Go tasks
+  go:build:
+    desc: Build the SpurtCMS binary
+    dir: "{{.SRC_DIR}}/spurtcms"
+    env:
+      GOWORK: off
+    cmds:
+      - go build -o ../../{{.BINARY}} .
+
+  go:test:
+    desc: Run tests
+    dir: "{{.SRC_DIR}}/spurtcms"
+    env:
+      GOWORK: off
+    cmds:
+      - go test ./...
+
+  go:lint:
+    desc: Run linter
+    dir: "{{.SRC_DIR}}/spurtcms"
+    env:
+      GOWORK: off
+    cmds:
+      - golangci-lint run || echo "golangci-lint not installed, skipping"
+
+  go:mod:
     desc: Tidy go modules
     dir: "{{.SRC_DIR}}/spurtcms"
     env:
       GOWORK: off
     cmds:
       - go mod tidy
+
+  go:install:
+    desc: Install to GOBIN
+    dir: "{{.SRC_DIR}}/spurtcms"
+    env:
+      GOWORK: off
+    cmds:
+      - go install .
 
   # Database tasks
   db:up:
