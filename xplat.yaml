@@ -18,7 +18,7 @@ processes:
         command: pg_isready -h localhost -p 5432
 
   cms:
-    command: task run
+    command: task go:run
     port: 8080
     depends_on:
       - postgres

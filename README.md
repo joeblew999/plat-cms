@@ -29,21 +29,27 @@ xplat process
 ```bash
 xplat task --list        # Show all tasks
 xplat task setup         # Full initial setup
-xplat task fetch         # Clone SpurtCMS source
-xplat task run           # Run CMS
-xplat task clean         # Clean build artifacts
+xplat task up            # Start all services
+xplat task down          # Stop all services
 
-# Database
-xplat task db:up         # Start PostgreSQL
-xplat task db:down       # Stop PostgreSQL
-xplat task db:reset      # Reset database (destroys data)
+# Source
+xplat task src:fetch     # Clone SpurtCMS source
+xplat task src:clean     # Remove fetched source
 
 # Go (all use GOWORK=off)
+xplat task go:run        # Run CMS
+xplat task go:dev        # Run with hot reload
 xplat task go:build      # Build binary
 xplat task go:test       # Run tests
 xplat task go:lint       # Run linter
 xplat task go:mod        # Tidy modules
 xplat task go:install    # Install to GOBIN
+xplat task go:clean      # Clean build artifacts
+
+# Database
+xplat task db:up         # Start PostgreSQL
+xplat task db:down       # Stop PostgreSQL
+xplat task db:reset      # Reset database (destroys data)
 ```
 
 ## Configuration Without GUI

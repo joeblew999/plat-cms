@@ -9,7 +9,6 @@ version: "3"
 
 vars:
   BINARY: plat-cms
-  MAIN: .
   SRC_DIR: .src
   SPURTCMS_REPO: github.com/spurtcms/spurtcms
 
@@ -19,15 +18,27 @@ tasks:
     cmds:
       - task --list
 
+  # Top-level convenience aliases
   setup:
     desc: Initial setup - fetch SpurtCMS and initialize
     cmds:
-      - task: fetch
+      - task: src:fetch
       - task: go:mod
       - task: db:up
-      - echo "Setup complete! Run 'xplat process' or 'task run' to start"
+      - echo "Setup complete! Run 'xplat process' or 'task go:run' to start"
 
-  fetch:
+  up:
+    desc: Start all services (database + CMS)
+    cmds:
+      - xplat process
+
+  down:
+    desc: Stop all services
+    cmds:
+      - docker compose down
+
+  # Source tasks
+  src:fetch:
     desc: Fetch SpurtCMS source into .src folder
     cmds:
       - mkdir -p {{.SRC_DIR}}
@@ -38,31 +49,34 @@ tasks:
           echo "SpurtCMS already fetched in {{.SRC_DIR}}/spurtcms"
         fi
 
-  run:
-    desc: Run SpurtCMS from .src folder
+  src:clean:
+    desc: Remove fetched source
+    cmds:
+      - rm -rf {{.SRC_DIR}}/spurtcms
+
+  # Go tasks (all use GOWORK=off)
+  go:run:
+    desc: Run SpurtCMS
     dir: "{{.SRC_DIR}}/spurtcms"
     env:
       GOWORK: off
     cmds:
       - go run main.go
 
-  dev:
-    desc: Run in development mode with hot reload
+  go:dev:
+    desc: Run with hot reload (requires air)
+    dir: "{{.SRC_DIR}}/spurtcms"
+    env:
+      GOWORK: off
     cmds:
       - |
         if command -v air &> /dev/null; then
           air
         else
           echo "air not installed, running without hot reload"
-          task run
+          go run main.go
         fi
 
-  clean:
-    desc: Clean build artifacts
-    cmds:
-      - rm -f {{.BINARY}}
-
-  # Go tasks
   go:build:
     desc: Build the SpurtCMS binary
     dir: "{{.SRC_DIR}}/spurtcms"
@@ -102,6 +116,11 @@ tasks:
       GOWORK: off
     cmds:
       - go install .
+
+  go:clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -f {{.BINARY}}
 
   # Database tasks
   db:up:
@@ -151,14 +170,3 @@ tasks:
       - |
         sed -i.bak 's|MASTER_BLOCKS_ENDPOINTURL.*|MASTER_BLOCKS_ENDPOINTURL="https://superadmin.spurtcms.com/defaultblocklist/"|' {{.SRC_DIR}}/spurtcms/.env
         echo "Remote blocks re-enabled."
-
-  # All-in-one commands
-  up:
-    desc: Start all services (database + CMS)
-    cmds:
-      - xplat process
-
-  down:
-    desc: Stop all services
-    cmds:
-      - docker compose down
