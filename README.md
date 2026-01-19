@@ -2,7 +2,7 @@
 
 CMS based on https://github.com/spurtcms
 
-xplat driven: https://github.com/joeblew999/xplat
+xplat driven: https://github.com/joeblew999/xplat, /Users/apple/workspace/go/src/github.com/joeblew999/xplat
 
 ## Quick Start
 

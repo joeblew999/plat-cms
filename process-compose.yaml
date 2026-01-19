@@ -1,0 +1,20 @@
+# process-compose.yaml - Service orchestration for plat-cms
+# Generated from xplat.yaml processes section
+# Run with: xplat process
+
+version: "0.5"
+
+processes:
+  postgres:
+    command: docker compose up postgres
+    readiness_probe:
+      exec:
+        command: pg_isready -h localhost -p 5432
+      initial_delay_seconds: 2
+      period_seconds: 5
+
+  cms:
+    command: task go:run
+    depends_on:
+      postgres:
+        condition: process_healthy
