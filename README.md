@@ -82,7 +82,35 @@ Default data is inserted via `cms.sql`. Key tables:
 
 ### 3. Blocks System
 
-SpurtCMS uses **Blocks** - reusable content components fetched from a master registry:
+SpurtCMS uses **Blocks** - reusable content components. By default, blocks are fetched from a remote registry, but you can make them fully local.
+
+#### Block Management Tasks
+
+```bash
+# Fetch all 32 blocks from SpurtCMS registry (one-time)
+xplat task blocks:fetch
+
+# Seed fetched blocks into your database
+xplat task db:seed-remote
+
+# Or use your own local blocks
+xplat task db:seed
+
+# Disable remote fetching (offline mode)
+xplat task blocks:local
+
+# Re-enable remote fetching
+xplat task blocks:remote
+```
+
+#### Remote vs Local Blocks
+
+| Mode | Pros | Cons |
+|------|------|------|
+| **Remote** (default) | Always latest blocks | Requires internet, depends on SpurtCMS server |
+| **Local** | Works offline, full control | Manual updates needed |
+
+#### Block Registry URLs
 
 ```env
 MASTER_BLOCKS_ENDPOINTURL="https://superadmin.spurtcms.com/defaultblocklist/"
@@ -90,10 +118,11 @@ MASTER_CTA_ENDPOINTURL="https://superadmin.spurtcms.com/defaultctalist/"
 MASTER_CHANNELS_ENDPOINTURL="https://superadmin.spurtcms.com/admin/channels/"
 ```
 
-Blocks can be:
-- Pre-built templates from the SpurtCMS registry
-- Custom blocks stored in `tbl_mstr_blocks`
-- Used in pages and entries for consistent layouts
+Set `MASTER_BLOCKS_ENDPOINTURL=""` to disable remote fetching.
+
+#### Available Blocks (32 from registry)
+
+Blocks include: Hero sections, Card grids, CTAs, Feature lists, Testimonials, Pricing tables, FAQs, Footers, and more. Run `xplat task blocks:fetch` to download them all.
 
 ### 4. Programmatic Setup via GraphQL
 

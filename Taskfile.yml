@@ -103,6 +103,38 @@ tasks:
       - docker compose down -v
       - docker compose up -d postgres
 
+  db:seed:
+    desc: Seed local blocks into database
+    cmds:
+      - docker exec -i plat-cms-postgres psql -U postgres -d spurtcms < seeds/blocks.sql
+      - echo "Local blocks seeded successfully"
+
+  db:seed-remote:
+    desc: Seed remote SpurtCMS blocks into database
+    cmds:
+      - docker exec -i plat-cms-postgres psql -U postgres -d spurtcms < seeds/remote-blocks.sql
+      - echo "Remote blocks seeded successfully"
+
+  # Blocks tasks
+  blocks:fetch:
+    desc: Fetch blocks from SpurtCMS registry
+    cmds:
+      - ./scripts/fetch-blocks.sh
+
+  blocks:local:
+    desc: Use only local blocks (disable remote fetch)
+    cmds:
+      - |
+        sed -i.bak 's|MASTER_BLOCKS_ENDPOINTURL.*|MASTER_BLOCKS_ENDPOINTURL=""|' {{.SRC_DIR}}/spurtcms/.env
+        echo "Remote blocks disabled. Using local blocks only."
+
+  blocks:remote:
+    desc: Re-enable remote blocks from SpurtCMS
+    cmds:
+      - |
+        sed -i.bak 's|MASTER_BLOCKS_ENDPOINTURL.*|MASTER_BLOCKS_ENDPOINTURL="https://superadmin.spurtcms.com/defaultblocklist/"|' {{.SRC_DIR}}/spurtcms/.env
+        echo "Remote blocks re-enabled."
+
   # All-in-one commands
   up:
     desc: Start all services (database + CMS)
